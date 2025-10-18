@@ -1,0 +1,9 @@
+apiVersion: v2
+appVersion: 1.11.2
+description: Custom manifests for nginx
+maintainers:
+- email: ads@tekn.group
+  name: TEKN Team
+name: helm-library-manifests
+type: application
+version: 1.11.2

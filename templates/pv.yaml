@@ -1,0 +1,36 @@
+{{- range .Values.pvs }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+  name: {{ .name }}
+spec:
+  accessModes: {{ .accessModes }}
+  capacity:
+    storage: {{ .storage }}
+  csi:
+    controllerExpandSecretRef:
+      name: csi-manila-secrets
+      namespace: foundational
+    driver: nfs.manila.csi.openstack.org
+    nodePublishSecretRef:
+      name: csi-manila-secrets
+      namespace: foundational
+    nodeStageSecretRef:
+      name: csi-manila-secrets
+      namespace: foundational
+    volumeAttributes:
+      cephfs-mounter: fuse
+      shareAccessID: {{ .shareAccessID }}
+      shareID: {{ .shareID }}
+      storage.kubernetes.io/csiProvisionerIdentity: 1671809341609-8081-nfs.manila.csi.openstack.org
+    volumeHandle: {{ .volumeHandle }}
+  mountOptions:
+  - nfsvers=3
+  - nolock
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: csi-manila-nfs-retain
+  volumeMode: Filesystem
+
+{{- end }}

@@ -1,0 +1,18 @@
+{{- range .Values.pvcs }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}
+spec:
+  storageClassName: {{ .storageClassName | default "csi-manila-nfs-retain" }}
+  resources:
+    requests:
+      storage: {{ .size | default "1Gi"}}
+  volumeMode: Filesystem
+  {{- if .volumeName }}
+  volumeName: {{ .volumeName }}
+  {{- end }}
+  accessModes:
+    - {{ .accessMode | default "ReadWriteOnce" }}
+{{- end }}

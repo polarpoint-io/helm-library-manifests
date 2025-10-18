@@ -1,0 +1,13 @@
+customResources: []
+
+externalSecrets: []
+
+configMaps: []
+
+jenkinsCredentials: []
+
+dockerConfigs: []
+
+pvcs: []
+
+pvs: []
