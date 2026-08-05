@@ -1,9 +1,9 @@
 apiVersion: v2
-appVersion: 1.11.2
-description: Custom manifests for nginx
+appVersion: 2.0.0
+description: Shared templates for the small manifests each app needs alongside its upstream chart - ExternalSecrets, Certificates, ConfigMaps, and the nginx TLS-termination + tailscale-expose pattern
 maintainers:
 - email: ads@tekn.group
   name: TEKN Team
 name: helm-library-manifests
 type: application
-version: 1.11.2
+version: 2.0.0

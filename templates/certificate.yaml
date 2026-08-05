@@ -1,0 +1,38 @@
+{{- range .Values.certificates }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace | default $.Release.Namespace }}
+  {{- with .annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  # Defaults to the Certificate's own name. Keeping them equal is the
+  # convention across this estate, and a tlsProxy entry references the secret
+  # by name - a mismatch there fails at pod start with a missing volume, not
+  # at render.
+  secretName: {{ .secretName | default .name }}
+  issuerRef:
+    name: {{ .issuer | default $.Values.global.issuer }}
+    kind: {{ .issuerKind | default "ClusterIssuer" }}
+    {{- with .issuerGroup }}
+    group: {{ . }}
+    {{- end }}
+  dnsNames:
+    {{- if .dnsNames }}
+    {{- toYaml .dnsNames | nindent 4 }}
+    {{- else }}
+    - {{ required "a certificate needs dnsNames or a host" .host }}
+    {{- end }}
+  {{- with .duration }}
+  duration: {{ . }}
+  {{- end }}
+  {{- with .renewBefore }}
+  renewBefore: {{ . }}
+  {{- end }}
+  {{- with .privateKey }}
+  privateKey: {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

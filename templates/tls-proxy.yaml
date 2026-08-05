@@ -1,0 +1,114 @@
+{{/*
+The nginx TLS-termination pattern this estate repeats for every vanity
+hostname, as one entry instead of three hand-written objects.
+
+Why it exists at all: Tailscale's `serve` only answers for its own *.ts.net
+SNI, so a vanity name like grc.polarpoint.io needs an L4 path -
+`tailscale.com/expose` on a Service that forwards raw TCP - and something
+behind it has to terminate TLS with the real certificate. cert-manager issues
+the cert, nginx presents it, tailscale carries the packets.
+
+Emits a ConfigMap (nginx.conf), a Deployment (nginx), and the exposed Service.
+Pair it with a `certificates` entry whose secretName matches `certSecret`.
+*/}}
+{{- range .Values.tlsProxies }}
+{{- $name := printf "%s-tls-proxy" .name }}
+{{- $ns := .namespace | default $.Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+data:
+  nginx.conf: |
+    events {}
+    http {
+      server {
+        listen {{ .listenPort | default 8443 }} ssl;
+        server_name {{ required "a tlsProxy needs a host" .host }};
+        ssl_certificate /tls/tls.crt;
+        ssl_certificate_key /tls/tls.key;
+        client_max_body_size {{ .maxBodySize | default "50m" }};
+
+        {{- if .largeHeaders }}
+        # Some apps emit response headers larger than nginx's 4-8k default
+        # buffers, which shows up as "upstream sent too big header" and a 502
+        # on the login path rather than anything obviously buffer-related.
+        proxy_buffer_size 32k;
+        proxy_buffers 4 32k;
+        proxy_busy_buffers_size 64k;
+        large_client_header_buffers 4 32k;
+        {{- end }}
+        {{- with .serverSnippet }}
+        {{- . | nindent 8 }}
+        {{- end }}
+{{ range .routes }}
+        location {{ .path }} {
+          proxy_pass {{ .upstream }};
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-Proto https;
+          proxy_set_header X-Forwarded-Host $host;
+          {{- if .websocket }}
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_http_version 1.1;
+          {{- end }}
+          proxy_read_timeout {{ .readTimeout | default 3600 }};
+          {{- with .snippet }}
+          {{- . | nindent 10 }}
+          {{- end }}
+        }
+{{ end }}
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels: {app: {{ $name }}}
+  template:
+    metadata:
+      labels: {app: {{ $name }}}
+      annotations:
+        # Roll nginx when the config changes. Without this a routing edit sits
+        # in the ConfigMap while the running pod serves the old one.
+        checksum/config: {{ toYaml . | sha256sum }}
+    spec:
+      containers:
+        - name: nginx
+          image: {{ .image | default "nginx:1.27-alpine" }}
+          ports: [{containerPort: {{ .listenPort | default 8443 }}}]
+          volumeMounts:
+            - {name: conf, mountPath: /etc/nginx/nginx.conf, subPath: nginx.conf}
+            - {name: tls, mountPath: /tls, readOnly: true}
+          {{- with .resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: conf
+          configMap: {name: {{ $name }}}
+        - name: tls
+          secret: {secretName: {{ required "a tlsProxy needs a certSecret" .certSecret }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .serviceName | default .name }}
+  namespace: {{ $ns }}
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: {{ .tailscaleHostname | default .name }}
+    {{- with .serviceAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector: {app: {{ $name }}}
+  ports:
+    - {name: https, port: {{ .port | default 443 }}, targetPort: {{ .listenPort | default 8443 }}}
+{{- end }}

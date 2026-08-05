@@ -1,8 +1,37 @@
+# Defaults shared by every template here. Each item can override them
+# individually; these exist so a chart that uses one secret store for
+# everything says so once.
+global:
+  # This estate runs External Secrets with the Kubernetes provider and a
+  # ClusterSecretStore of this name per cluster - there is no Vault. Charts
+  # inherited from the Vault-based lineage set `vault-backend` instead.
+  secretStore:
+    name: cluster-secrets-store
+    kind: ClusterSecretStore
+  # ESO serves both v1 and v1beta1; v1 is the preferred/storage version.
+  externalSecretsApiVersion: external-secrets.io/v1
+  # cert-manager ClusterIssuer used by `certificates` unless one is named.
+  issuer: letsencrypt-dns01
+
+# Arbitrary YAML, emitted verbatim. The escape hatch for anything without a
+# typed template below - Crossplane Providers, ClusterIssuers, RBAC. Prefer a
+# typed entry when one exists: `customResources` gets you no validation and no
+# defaults.
 customResources: []
 
+# ExternalSecrets. `name` defaults to secretName rather than forcing an "es-"
+# prefix, because renaming an existing ExternalSecret recreates it and its
+# target Secret.
 externalSecrets: []
 
 configMaps: []
+
+# cert-manager Certificates.
+certificates: []
+
+# The nginx TLS-termination + tailscale-expose pattern this estate repeats for
+# every vanity hostname. See templates/tls-proxy.yaml for why it exists.
+tlsProxies: []
 
 jenkinsCredentials: []
 
