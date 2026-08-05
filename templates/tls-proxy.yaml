@@ -48,7 +48,9 @@ data:
           proxy_pass {{ .upstream }};
           proxy_set_header Host $host;
           proxy_set_header X-Forwarded-Proto https;
+          {{- if ne .forwardedHost false }}
           proxy_set_header X-Forwarded-Host $host;
+          {{- end }}
           {{- if .websocket }}
           proxy_set_header Upgrade $http_upgrade;
           proxy_set_header Connection "upgrade";

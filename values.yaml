@@ -31,6 +31,11 @@ certificates: []
 
 # The nginx TLS-termination + tailscale-expose pattern this estate repeats for
 # every vanity hostname. See templates/tls-proxy.yaml for why it exists.
+#
+# Per-route `forwardedHost: false` omits the X-Forwarded-Host header. It
+# defaults on because most apps behind this want it, but not every existing
+# proxy set it - and adding a header during a migration is a behaviour change,
+# however small. Set it false to match a proxy that never had it.
 tlsProxies: []
 
 jenkinsCredentials: []
