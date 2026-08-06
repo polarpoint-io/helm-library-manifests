@@ -1,4 +1,23 @@
+{{/*
+Arbitrary YAML, emitted verbatim - the escape hatch for anything without a typed
+template. The only thing done to it is stamping global.syncWave onto metadata
+when the object has not set its own, so a caller using this chart as a second
+source gets the same ordering guarantee as the typed entries.
+
+deepCopy first: these values are used more than once during a render, and
+mutating them in place leaks the annotation into unrelated output.
+*/}}
 {{- range .Values.customResources }}
+{{- $obj := deepCopy . }}
+{{- if $.Values.global.syncWave }}
+{{- $md := (get $obj "metadata") | default dict }}
+{{- $ann := (get $md "annotations") | default dict }}
+{{- if not (hasKey $ann "argocd.argoproj.io/sync-wave") }}
+{{- $_ := set $ann "argocd.argoproj.io/sync-wave" (toString $.Values.global.syncWave) }}
+{{- $_ := set $md "annotations" $ann }}
+{{- $_ := set $obj "metadata" $md }}
+{{- end }}
+{{- end }}
 ---
-{{ toYaml . }}
+{{ toYaml $obj }}
 {{- end }}

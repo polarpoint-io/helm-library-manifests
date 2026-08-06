@@ -5,9 +5,7 @@ kind: Certificate
 metadata:
   name: {{ .name }}
   namespace: {{ .namespace | default $.Release.Namespace }}
-  {{- with .annotations }}
-  annotations: {{- toYaml . | nindent 4 }}
-  {{- end }}
+  {{- include "lib.annotations" (dict "item" . "global" $.Values.global) | nindent 2 }}
 spec:
   # Defaults to the Certificate's own name. Keeping them equal is the
   # convention across this estate, and a tlsProxy entry references the secret

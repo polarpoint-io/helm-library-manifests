@@ -2,6 +2,18 @@
 # individually; these exist so a chart that uses one secret store for
 # everything says so once.
 global:
+  # Stamped onto every object this chart renders, unless the object sets its own.
+  #
+  # For sync waves. When this chart runs as a SECOND source alongside an
+  # application's own chart, its objects have to land before the workload: an
+  # ExternalSecret arriving after the Deployment that mounts it means a pod that
+  # starts, fails, and backs off. A negative wave here makes that ordering a
+  # property of the chart rather than something every caller remembers.
+  #
+  # Left unset by default so a chart used on its own behaves exactly as before.
+  syncWave: ""
+  annotations: {}
+
   # This estate runs External Secrets with the Kubernetes provider and a
   # ClusterSecretStore of this name per cluster - there is no Vault. Charts
   # inherited from the Vault-based lineage set `vault-backend` instead.

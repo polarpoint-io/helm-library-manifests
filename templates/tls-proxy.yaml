@@ -20,6 +20,7 @@ kind: ConfigMap
 metadata:
   name: {{ $name }}
   namespace: {{ $ns }}
+  {{- include "lib.annotations" (dict "item" dict "global" $.Values.global) | nindent 2 }}
 data:
   nginx.conf: |
     events {}
@@ -70,6 +71,7 @@ kind: Deployment
 metadata:
   name: {{ $name }}
   namespace: {{ $ns }}
+  {{- include "lib.annotations" (dict "item" dict "global" $.Values.global) | nindent 2 }}
 spec:
   replicas: {{ .replicas | default 1 }}
   selector:
@@ -106,6 +108,9 @@ metadata:
   annotations:
     tailscale.com/expose: "true"
     tailscale.com/hostname: {{ .tailscaleHostname | default .name }}
+    {{- if $.Values.global.syncWave }}
+    argocd.argoproj.io/sync-wave: {{ $.Values.global.syncWave | quote }}
+    {{- end }}
     {{- with .serviceAnnotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

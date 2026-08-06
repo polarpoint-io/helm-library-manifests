@@ -5,6 +5,7 @@ kind: ConfigMap
 metadata:
   name: {{ .name }}
   namespace: {{ .namespace | default $.Release.Namespace }}
+  {{- include "lib.annotations" (dict "item" . "global" $.Values.global) | nindent 2 }}
 data:
   {{ toYaml .data | nindent 2 }}
 {{- end }}
