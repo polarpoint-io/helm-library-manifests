@@ -87,6 +87,17 @@ spec:
       containers:
         - name: nginx
           image: {{ .image | default "nginx:1.27-alpine" }}
+          # nginx reads the certificate once, at start. cert-manager renews the
+          # Secret ~30 days before expiry and the kubelet updates the mounted
+          # files, but nginx keeps serving the old cert from memory until it
+          # expires - which is how every proxy here went dark on 1 and 8 Nov.
+          # Reload on a timer so a renewal is picked up within reloadInterval.
+          # `exec` keeps nginx as PID 1, so a crash still restarts the pod.
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              (while sleep {{ .reloadInterval | default 21600 }}; do nginx -s reload; done) &
+              exec nginx -g 'daemon off;'
           ports: [{containerPort: {{ .listenPort | default 8443 }}}]
           volumeMounts:
             - {name: conf, mountPath: /etc/nginx/nginx.conf, subPath: nginx.conf}

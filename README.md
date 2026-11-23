@@ -102,6 +102,7 @@ matches its `certSecret`.
 |---|---|
 | `largeHeaders` | apps whose response headers overflow nginx's default buffers — shows up as a 502 on login rather than anything buffer-related |
 | `maxBodySize` | upload limits; defaults to 50m |
+| `reloadInterval` | seconds between `nginx -s reload`, so a renewed certificate is served without a pod restart; defaults to 21600 (6h) |
 | `routes[].websocket` | adds the Upgrade/Connection headers |
 | `routes[].forwardedHost` | set false to match a proxy that never sent `X-Forwarded-Host` |
 | `serverSnippet`, `routes[].snippet` | raw nginx, when the above is not enough |
